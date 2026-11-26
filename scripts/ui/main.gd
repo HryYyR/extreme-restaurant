@@ -20,6 +20,10 @@ const GuestProfile = preload("res://scripts/ui/guest_profile.gd")
 const MajorEventPanel = preload("res://scripts/ui/major_event_panel.gd")
 const KeyBindings = preload("res://scripts/ui/key_bindings.gd")
 const BuildCatalog = preload("res://scripts/ui/build_catalog.gd")
+const Trophies = preload("res://scripts/core/trophies.gd")
+const TrophyArt = preload("res://scripts/visuals/trophy_art.gd")
+const TrophyBox = preload("res://scripts/ui/trophy_box.gd")
+const ManagementCard = preload("res://scripts/ui/management_card.gd")
 
 signal return_to_title
 
@@ -47,12 +51,12 @@ var report_shown_day = -1
 var modal_layer: CanvasLayer
 var modal_kind = ""
 var modal_frame
+var trophy_box: TrophyBox
 var modal_opener: Control
 var fading_modal: CanvasLayer
 var save_path = ""
 var testing = false
 var inspected: Dictionary = {}
-var selected_offer = 0
 var guide
 var tutorial_path := ""
 var keys
@@ -141,7 +145,6 @@ func _build_interface() -> void:
 	world.wall_requested.connect(_place_wall)
 	world.drag_started.connect(func():
 		ui.info_panel.hide()
-		ui.slot_panel.hide()
 		_sync_build_tools()
 	)
 	world.inspect_requested.connect(_inspect)
@@ -212,7 +215,7 @@ func _build_interface() -> void:
 	ui.income_label = Style.readout(resources_row, "income", "0$", "今日收入")
 	ui.gold_label = Style.readout(resources_row, "coins", "0$", "持有金币")
 	ui.rep_label = Style.readout(resources_row, "reputation", "0", "声望", Style.GREEN)
-	ui.star_label = Style.readout(resources_row, "star", "0", "闪星 · 购买地块扩建和奖杯")
+	ui.star_label = Style.readout(resources_row, "star", "0", "闪星 · 开放地块与购买装饰")
 	ui.gear = _icon_button("settings", "设置")
 	overlay.add_child(ui.gear)
 	_rect(ui.gear, -61, 14, -14, 61, 1, 0)
@@ -349,31 +352,6 @@ func _build_interface() -> void:
 		ui[tool[0]] = button
 		button.hide()
 	ui.info_panel.visible = false
-	ui.slot_panel = Style.card()
-	ui.slot_panel.add_theme_stylebox_override("panel",Style.surface(Style.GOLD, 15))
-	overlay.add_child(ui.slot_panel)
-	_rect(ui.slot_panel,-360,150,-18,347,1,0)
-	var slot_body = VBoxContainer.new()
-	ui.slot_panel.add_child(slot_body)
-	var slot_header = HBoxContainer.new()
-	slot_body.add_child(slot_header)
-	var slot_title = Style.text("采购处",22,Style.GOLD)
-	slot_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	slot_header.add_child(Icon.make("coins", Style.GOLD, 22))
-	slot_header.add_child(slot_title)
-	var slot_close = _icon_button("close", "关闭")
-	slot_close.pressed.connect(func():
-		ui.slot_panel.hide()
-		_clear_inspector()
-	)
-	slot_header.add_child(slot_close)
-	slot_body.add_child(Style.text("每晚到货一道菜谱、两项增益。选中商品即可查看价格和效果。",15,Style.INK,true))
-	ui.slot_hint = Style.text("",14,Style.MUTED,true)
-	slot_body.add_child(ui.slot_hint)
-	ui.enter_shop = Style.button("进入采购",true)
-	ui.enter_shop.pressed.connect(_show_purchase_page)
-	slot_body.add_child(ui.enter_shop)
-	ui.slot_panel.visible = false
 	service_feedback = ServiceFeedback.new()
 	service_feedback.wallet = ui.gold_label
 	service_feedback.z_index = 2
@@ -417,11 +395,8 @@ func _refresh_all() -> void:
 	ui.fast.visible = sim.phase == "DAY"
 	if sim.phase != "DAY": _hide_special_notice()
 	ui.pause.visible = sim.phase == "DAY"
-	ui.slot_hint.text = "仅在夜晚采购；白天请观察经营。" if not night else "今晚商品已准备好，价格在采购页查看。"
-	ui.enter_shop.disabled = not night
 	if not night:
 		ui.info_panel.hide()
-		ui.slot_panel.hide()
 	_update_hud()
 
 func _update_hud() -> void:
@@ -556,13 +531,14 @@ func _on_guest_payment(cell: Vector2, amount: int) -> void:
 	var point = world.get_global_transform_with_canvas() * world.screen_point(cell + Vector2(0, -.2))
 	service_feedback.add_payment(point, amount)
 
-func _save() -> void:
-	if sim.phase not in ["NIGHT","REPORT"]: return
+func _save() -> String:
+	if sim.phase not in ["NIGHT","REPORT"]: return ""
 	var checkpoint = sim.export_state()
 	var error = Store.write_checkpoint(checkpoint, save_path)
 	if error.is_empty() and sim.phase == "REPORT" and sim.last_report.get("result", "") == "WIN":
 		error = ChapterProgress.record_win(checkpoint, testing)
 	if not error.is_empty(): _notice(error,true)
+	return error
 
 func _notice(message: String, error: bool = false) -> void:
 	if not ui.has("toast_label"): return
@@ -597,7 +573,6 @@ func _open_day() -> void:
 		fast_forward = false
 		world.cancel_placement()
 		ui.info_panel.hide()
-		ui.slot_panel.hide()
 		_refresh_all()
 
 func _on_focus_lost() -> void:
@@ -621,24 +596,22 @@ func _toggle_fast() -> void:
 	_update_hud()
 
 func _inspect(kind: String, id: String) -> void:
-	if kind == "trophy_shop":
-		_show_trophy_shop()
-		return
 	if kind == "facility":
-		if id == "decor_shop":
-			_show_decoration_shop()
-			return
 		world.selected_id = id
-		if id == "cashier":
-			_sync_build_tools()
-			_show_cashier_front()
-			return
-		if id == "slot":
-			ui.info_panel.hide()
-			ui.slot_panel.show()
-			_sync_build_tools()
-			guide.purchase()
-			return
+		_sync_build_tools()
+		match id:
+			"cashier":
+				_show_cashier_front()
+				return
+			"slot":
+				_show_purchase_page()
+				return
+			"trophy_shop":
+				_show_trophy_shop()
+				return
+			"decor_shop":
+				_show_decoration_shop()
+				return
 	if kind == "plot":
 		_show_plot_confirmation(id)
 		return
@@ -646,7 +619,6 @@ func _inspect(kind: String, id: String) -> void:
 	if kind == "staff" and (sim.phase != "DAY" or sim.staff_member(int(id)).is_empty()): return
 	if kind == "preview" and sim.phase != "NIGHT": return
 	if kind == "preview": world.selected_id = id
-	ui.slot_panel.hide()
 	var changed = kind != inspected.get("kind") or id != inspected.get("id") or not ui.info_panel.visible
 	inspected = {"kind":kind,"id":id}
 	_update_inspector(changed)
@@ -724,7 +696,9 @@ func _update_inspector(reveal := false) -> void:
 						detail += "\n点击移动工具可预览范围。"
 				"trophy":
 					var relic = sim.relic_defs[str(f.relic_id)]
-					detail = relic.description + "\n常驻效果仅在展示区放下后生效。\n已展示 %d / %d" % [Grid.facilities(sim.layout,"trophy").size(),int(sim.attributes.relic_slots)]
+					detail = "%s品质 · %s\n已展示 %d / %d" % [Trophies.grade_name(int(relic.rarity)), Trophies.description(relic), Grid.facilities(sim.layout,"trophy").size(), int(sim.attributes.relic_slots)]
+					if sim.displayed_trophy_effects().get(relic.effect_type, {}).get("id") != relic.id:
+						detail += "\n同类高品质奖杯正在生效"
 			ui.info_body.text = detail
 		"staff":
 			var person = sim.staff_member(int(id))
@@ -736,6 +710,8 @@ func _update_inspector(reveal := false) -> void:
 			ui.info_title.text = "%s #%d" % ["厨师" if chef else "服务员", person.id]
 			var actions = {"ORDER":"给客人点单","SUBMIT":"送订单到厨房","COOK":"正在烹饪","COLLECT":"领取灶台食物","TRANSFER":"搬运到出餐口","PICKUP":"取餐","DELIVER":"给客人上菜","RETURN":"返还食物"}
 			ui.info_body.text = "当前：%s\n手持食物：%d 份" % [person.reason if person.task.is_empty() else actions.get(person.task.kind,"正在工作"), person.carry_food.size()]
+			if not chef and not person.carry_orders.is_empty():
+				ui.info_body.text += " · 手持订单 %d 单" % person.carry_orders.size()
 		"customer":
 			var customer_id = int(id)
 			var customer = sim.customers.get(customer_id, {})
@@ -762,10 +738,9 @@ func _efficiency_buff(effect: String) -> String:
 		if str(buff.effect_type) == effect:
 			var increase = int(round(float(buff.effect_per_stack) * int(sim.buff_states[id].stack_count) * 100.0))
 			lines += "\n增益 (%s%d%%)：%s · %s" % [sign,increase,str(buff.name),str(buff.description)]
-	for trophy in Grid.facilities(sim.layout,"trophy"):
-		var relic = sim.relic_defs[str(trophy.relic_id)]
-		if str(relic.effect_type) == effect:
-			lines += "\n常驻 (%s%d%%)：%s · %s" % [sign,int(round(float(relic.effect_value)*100.0)),str(relic.name),str(relic.description)]
+	var trophy = sim.displayed_trophy_effects().get(effect, {})
+	if not trophy.is_empty():
+		lines += "\n奖杯 · %s · %s" % [trophy.name, Trophies.description(trophy)]
 	return lines
 
 func _guest_effect(guest: Dictionary) -> String:
@@ -794,7 +769,6 @@ func _begin_move() -> void:
 	world.editing = true
 	world.selected_id = id
 	ui.info_panel.hide()
-	ui.slot_panel.hide()
 	_sync_build_tools()
 	var rotation_hint = " · %s 旋转" % keys.text("rotate") if Grid.can_rotate(Grid.find(sim.layout, world.selected_id)) else ""
 	_notice("点击空格放置" + rotation_hint + " · Esc 取消")
@@ -812,7 +786,7 @@ func _move_facility(id: String, cell: Vector2i) -> void:
 	var message = "已合成%s。" % Grid.table_label(merged_size) if merged_size > 0 else "设施位置已调整。"
 	if _command(result, message):
 		world.cancel_placement()
-		if id in ["cashier","slot"]:
+		if id in ["cashier", "slot", "trophy_shop", "decor_shop"]:
 			_sync_build_tools()
 			return
 		_inspect("facility", str(result.get("facility_id", id)))
@@ -857,7 +831,6 @@ func _select_pending(id: String) -> void:
 	world.editing = true
 	world.selected_id = id
 	ui.info_panel.hide()
-	ui.slot_panel.hide()
 	_sync_build_tools()
 	var hint = " · %s 旋转" % keys.text("rotate") if Grid.can_rotate(facility) else ""
 	if facility.type == "trophy":
@@ -870,7 +843,6 @@ func _start_wall_placement() -> void:
 	_close_modal()
 	world.cancel_placement()
 	_clear_inspector()
-	ui.slot_panel.hide()
 	world.placing_wall = true
 	_sync_build_tools()
 	_notice("按住左键拖铺 · %s 转向 · Esc 退出" % keys.text("rotate"))
@@ -883,7 +855,6 @@ func _show_plot_confirmation(id: String) -> void:
 	var plot = sim.next_land_plot()
 	if plot.is_empty() or str(plot.id) != id: return
 	ui.info_panel.hide()
-	ui.slot_panel.hide()
 	var box = _new_modal("plot_unlock", str(plot.name), 430)
 	var status = sim.land_plot_status(id)
 	var waiting_for_date = sim.day < int(plot.unlock_day)
@@ -1007,67 +978,53 @@ func _rent_budget_text() -> String:
 	var balance = "当前余额距房租还差 %d$" % missing if missing > 0 else "当前余额可覆盖房租"
 	return "第 %d 天房租 %d$ · %s" % [int(rent.day), int(rent.amount), balance]
 
+func _management_header(box: VBoxContainer, summary := "", hiring := false) -> void:
+	var strip = Style.card()
+	strip.add_theme_stylebox_override("panel", Style.box(ManagementCard.INSET, ManagementCard.EDGE, 9, 9))
+	box.add_child(strip)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 14)
+	strip.add_child(row)
+	if not hiring:
+		var portrait := Control.new()
+		portrait.custom_minimum_size = Vector2(59, 50)
+		portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(portrait)
+		var chef = Actor.new()
+		chef.name = "PurchaseChef"
+		chef.position = Vector2(28, 39)
+		chef.z_index = 2
+		portrait.add_child(chef)
+		chef.set_visual("chef")
+		chef.set_display_zoom(1.50)
+		chef.present("idle")
+	var coins = Style.readout(row, "coins", "%d 金币" % sim.gold, _rent_budget_text())
+	coins.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	if hiring:
+		Style.readout(row, "reputation", "%d 声望" % sim.reputation, "可用于招聘与改造的声望", Style.GREEN)
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(spacer)
+	if not summary.is_empty():
+		var state = Style.text(summary, 15, Style.GREEN if not sim.purchase_spent() else Style.MUTED)
+		state.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(state)
+
 func _show_cashier_page() -> void:
 	ui.info_panel.hide()
-	ui.slot_panel.hide()
-	var box = _new_modal("cashier", "招聘与改造", 590)
-	box.add_child(Style.text("可用声望 %d  ·  金币 %d$  ·  本晚已花 %d$" % [sim.reputation, sim.gold, sim.night_spend], 17, Style.GREEN))
-	box.add_child(Style.text(_rent_budget_text(), 14, Style.MUTED, true))
+	var box = _new_modal("cashier", "招聘与改造", 746)
+	_management_header(box, "", true)
 	var entries = {"waiters": ["服务员", "crowd"], "chefs": ["厨师与灶台", "chef"], "tables": ["桌位", "table"],
 		"menu_slots": ["菜单上架槽", "recipe"], "queue_capacity": ["排队容量", "door"], "relic_slots": ["奖杯展示位", "trophy"]}
 	var progression = sim.upgrade_progression()
 	for key in progression.unlocked:
-		var rule = sim.chapter.upgrade_rules[key]
-		var cap = int(sim.chapter.attribute_caps[key])
-		var count = int(sim.attributes[key])
-		var capped = count >= cap
-		var gate = sim.upgrade_gate(key)
-		var status = sim.upgrade_status(key)
-		var card = Style.card()
-		card.add_theme_stylebox_override("panel", Style.box(Color("2d464a"), Color("59817a"), 9, 11))
-		box.add_child(card)
-		var header = HBoxContainer.new()
-		card.add_child(header)
-		var seal = Style.card()
-		seal.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-		seal.add_theme_stylebox_override("panel", Style.box(Style.BG, Color("658683"), 8, 9))
-		seal.add_child(Icon.make(entries[key][1], Style.GOLD, 30))
-		header.add_child(seal)
-		var details = VBoxContainer.new()
-		details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		details.add_theme_constant_override("separation", 5)
-		header.add_child(details)
-		var title = HBoxContainer.new()
-		details.add_child(title)
-		var name_label = Style.text(entries[key][0], 17)
-		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		title.add_child(name_label)
-		title.add_child(Style.text("%d / %d" % [count, cap], 14, Style.MUTED))
-		var capacity = ProgressBar.new()
-		capacity.show_percentage = false
-		capacity.custom_minimum_size.y = 5
-		capacity.max_value = cap
-		capacity.value = count
-		details.add_child(capacity)
-		var increase = mini(int(rule.get("step", 1)), cap - count)
-		var price = "+%d  ·  %d 声望 + %d$" % [increase, sim.upgrade_cost(key), sim.upgrade_gold_cost(key)]
-		var caption = "已满" if capped else (str(gate.error) if not gate.ok else price)
-		var button = Style.button(caption, status.ok)
-		button.disabled = not status.ok
-		button.tooltip_text = "立即招聘" if status.ok and key in ["chefs", "waiters"] else ("立即改造" if status.ok else str(status.error))
-		button.pressed.connect(_upgrade.bind(key))
-		details.add_child(button)
-		if not status.ok and sim.phase == "NIGHT" and gate.ok and not capped:
-			details.add_child(Style.text(str(status.error), 13, Style.RED, true))
+		box.add_child(_upgrade_card(key, entries[key]))
 	if not progression.next_key.is_empty():
-		var feature = "厨师" if progression.next_key == "chefs" else str(entries[progression.next_key][0])
-		var preview = HBoxContainer.new()
-		box.add_child(preview)
-		preview.add_child(Icon.make("lock", Style.MUTED, 18))
-		preview.add_child(Style.text("%s · 第 %d 天解锁" % [feature, progression.next_day], 15, Style.MUTED))
+		var key = progression.next_key
+		box.add_child(_upgrade_card(key, entries[key], int(progression.next_day)))
 	var waiting = sim.stored_facilities().filter(func(f): return f.type in ["table", "stove"])
 	if sim.phase == "NIGHT" and not waiting.is_empty():
-		box.add_child(Style.text("待放置设施",16,Style.GOLD))
+		box.add_child(Style.text("待放置", 15, Style.GOLD))
 		var row = HFlowContainer.new()
 		box.add_child(row)
 		for f in waiting:
@@ -1075,13 +1032,40 @@ func _show_cashier_page() -> void:
 			button.pressed.connect(_pick_pending.bind(str(f.id)))
 			row.add_child(button)
 
+func _upgrade_card(key: String, entry: Array, unlock_day := 0) -> Control:
+	var card = ManagementCard.new()
+	card.name = "Upgrade_" + key
+	var locked = unlock_day > 0
+	card.build(entry[1], entry[0], Style.GREEN, locked)
+	var count = int(sim.attributes[key])
+	var cap = int(sim.chapter.attribute_caps[key])
+	var count_label = Style.text("%d / %d" % [count, cap], 14, ManagementCard.GRAY_TEXT if locked else Style.MUTED)
+	card.heading.add_child(count_label)
+	var capacity := ProgressBar.new()
+	capacity.show_percentage = false
+	capacity.custom_minimum_size.y = 5
+	capacity.max_value = cap
+	capacity.value = count
+	capacity.add_theme_stylebox_override("background", Style.box(Color("23292a") if locked else ManagementCard.INSET, Color.TRANSPARENT, 2, 0))
+	capacity.add_theme_stylebox_override("fill", Style.box(ManagementCard.GRAY_MUTED if locked else Style.GREEN, Color.TRANSPARENT, 2, 0))
+	card.body.add_child(capacity)
+	var status = sim.upgrade_status(key)
+	var increase = mini(int(sim.chapter.upgrade_rules[key].get("step", 1)), cap - count)
+	var caption = "+%d · %d 声望 + %d$" % [increase, sim.upgrade_cost(key), sim.upgrade_gold_cost(key)]
+	if locked: caption = "第 %d 天解锁" % unlock_day
+	elif increase <= 0: caption = "已达上限"
+	var hint = "招聘" if key in ["chefs", "waiters"] else "改造"
+	var button = card.action(caption, status.ok, hint if status.ok else str(status.error))
+	button.name = "ApplyUpgrade"
+	button.pressed.connect(_upgrade.bind(key))
+	return card
+
 func _show_build_page() -> void:
 	if sim.phase != "NIGHT": return
 	if ui.build_catalog.visible:
 		_close_build_page()
 		return
 	ui.info_panel.hide()
-	ui.slot_panel.hide()
 	ui.build_catalog.show()
 	_sync_build_dock()
 	_sync_build_tools()
@@ -1112,7 +1096,7 @@ func _sync_build_tools() -> void:
 	var night = sim.phase == "NIGHT" and not world.drag_active
 	var fixture = _selected_fixture()
 	var placing = world.editing or world.placing_wall
-	ui.move.visible = night and not placing and (world.selected_id.begins_with("preview_") or (not fixture.is_empty() and Grid.placed(fixture) and fixture.type not in ["slot", "decor_shop", "trophy_shop"]))
+	ui.move.visible = night and not placing and (world.selected_id.begins_with("preview_") or (not fixture.is_empty() and Grid.placed(fixture)))
 	ui.rotate.visible = night and (world.placing_wall or Grid.can_rotate(fixture))
 	ui.split.visible = night and not placing and Grid.can_split(fixture)
 	ui.store.visible = night and not placing and Grid.can_store(fixture)
@@ -1131,7 +1115,6 @@ func _sync_build_tools() -> void:
 func _cancel_placement() -> void:
 	world.cancel_placement()
 	_clear_inspector()
-	ui.slot_panel.hide()
 
 func _pick_catalog_item(id: String) -> void:
 	if id == "@wall":
@@ -1143,85 +1126,105 @@ func _pick_pending(id: String) -> void:
 	_close_modal()
 	_select_pending(id)
 
-func _trophy_glyph(id: String) -> String:
-	return {"bronze_clock":"◷","ember_cup":"♨","silver_bell":"♬","jade_medal":"◇","golden_spoon":"♜","laurel_crown":"♛","dining_hourglass":"⌛"}.get(id,"◆")
-
 func _show_trophy_shop() -> void:
-	if sim.phase != "NIGHT": return
+	if sim.phase != "NIGHT" or modal_kind == "trophy_shop": return
 	if not sim.trophy_shop_unlocked():
-		_notice("解锁奖杯展廊后，奖杯商店才会开门。")
+		_notice("解锁奖杯展廊后即可打开奖杯盲盒。")
 		return
-	ui.slot_panel.hide()
 	ui.info_panel.hide()
 	guide.trophy_shop_opened()
-	var box = _new_modal("trophy_shop","奖杯商店 · 永久遗物",720)
-	box.add_child(Style.text("★ %d 闪星  ·  每晚自动换货  ·  同款奖杯只可拥有一件" % sim.stars,16,Style.GOLD))
-	for index in range(sim.trophy_shop.size()):
-		var offer = sim.trophy_shop[index]
-		var card = Style.card()
-		card.add_theme_stylebox_override("panel",Style.box(Color("2c4051"),Color("66869b"),8,9))
-		box.add_child(card)
-		var row = HBoxContainer.new()
-		card.add_child(row)
-		var description = "已售罄"
-		if not str(offer.id).is_empty():
-			var relic = sim.relic_defs[str(offer.id)]
-			description = "%s · %d★\n%s" % [relic.name, int(relic.star_cost), relic.description]
-			var relic_badge = Style.text(_trophy_glyph(str(offer.id)),28,Color(str(relic.color)))
-			relic_badge.custom_minimum_size.x = 42
-			row.add_child(relic_badge)
-		var info = Style.text(description,15,Style.INK,true)
-		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.add_child(info)
-		var buy = Style.button("已购买" if offer.bought else "★ %d" % int(offer.price))
-		buy.disabled = str(offer.id).is_empty() or bool(offer.bought) or sim.stars < int(offer.price)
-		buy.tooltip_text = "已购入" if offer.bought else ("已售罄" if str(offer.id).is_empty() else ("还差 %d 闪星" % (int(offer.price) - sim.stars) if buy.disabled else "购买奖杯"))
-		buy.pressed.connect(_buy_trophy.bind(index))
-		row.add_child(buy)
-	var refresh = Style.button("换一批奖杯 · 1 闪星")
-	refresh.disabled = sim.stars < 1 or sim._available_trophy_count() <= 3
-	refresh.tooltip_text = "暂无其他奖杯可换" if sim._available_trophy_count() <= 3 else ("需要 1 闪星" if sim.stars < 1 else "换一批奖杯")
-	refresh.pressed.connect(_refresh_trophy_shop)
-	box.add_child(refresh)
-	var bag = Style.button("奖杯背包（%d 件 / 展示 %d）" % [sim.owned_relics.size(),int(sim.attributes.relic_slots)])
-	bag.pressed.connect(_show_trophy_bag)
-	box.add_child(bag)
+	var box = _new_modal("trophy_shop", "奖杯盲盒", 910)
+	trophy_box = TrophyBox.new()
+	box.add_child(trophy_box)
+	trophy_box.configure(sim)
+	trophy_box.draw_requested.connect(_open_trophy_box)
+	trophy_box.bag_requested.connect(_show_trophy_bag)
+	trophy_box.place_requested.connect(_pick_pending)
 
-func _buy_trophy(index: int) -> void:
-	if _command(sim.buy_trophy(index),"奖杯已加入背包；放在展示区才会生效。"):
-		_show_trophy_shop()
-
-func _refresh_trophy_shop() -> void:
-	if _command(sim.refresh_trophies(),"奖杯列表已刷新。"):
-		_show_trophy_shop()
+func _open_trophy_box() -> void:
+	if modal_kind != "trophy_shop" or not is_instance_valid(trophy_box) or trophy_box.opening: return
+	var offer = sim.trophy_box_offer()
+	var checkpoint = sim.export_state()
+	var result = sim.draw_trophy()
+	if not result.ok:
+		_notice(result.error, true)
+		trophy_box.refresh()
+		return
+	if not _save().is_empty():
+		sim.restore_state(checkpoint)
+		_refresh_all()
+		trophy_box.refresh()
+		return
+	if modal_frame != null: modal_frame.show_error("")
+	_refresh_all()
+	trophy_box.animate_opening(result, offer)
 
 func _show_trophy_bag() -> void:
 	if not sim.trophy_shop_unlocked():
 		_notice("解锁奖杯展廊后开放奖杯背包。")
 		return
-	var box = _new_modal("trophy_bag","奖杯背包",650)
-	box.add_child(Style.text("已展示 %d / %d 件 · 只能放在展廊的展示区" % [Grid.facilities(sim.layout,"trophy").size(),int(sim.attributes.relic_slots)],15,Style.GOLD))
-	if sim.owned_relics.is_empty(): box.add_child(Style.text("尚未拥有奖杯。解锁奖杯展廊后，可在旁边的奖杯商店购买。",15,Style.MUTED))
+	var box = _new_modal("trophy_bag", "奖杯背包", 710)
+	var displayed = sim.displayed_trophy_effects()
+	var placed_count = Grid.facilities(sim.layout, "trophy").size()
+	box.add_child(Style.text("已展示 %d / %d 件 · 同类奖杯只生效最高档" % [placed_count, int(sim.attributes.relic_slots)], 15, Style.GOLD))
+	if sim.owned_relics.is_empty():
+		box.add_child(Style.text("打开盲盒后，可从这里取出奖杯。", 15, Style.MUTED))
+		return
+	var search := LineEdit.new()
+	search.placeholder_text = "搜索名称、品质或效果"
+	search.visible = sim.owned_relics.size() > 7
+	box.add_child(search)
+	var entries = []
 	for id in sim.owned_relics:
-		var relic = sim.relic_defs[id]
-		var entity = Grid.find(sim.layout,"trophy_"+str(id))
-		var row = HBoxContainer.new()
-		box.add_child(row)
-		var info = Style.text("%s %s · %d★ · %s" % [_trophy_glyph(str(id)), relic.name, int(relic.star_cost), relic.description],15,Color(str(relic.color)),true)
-		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.add_child(info)
-		var action = _icon_button("move", "移动奖杯" if Grid.placed(entity) else "摆放奖杯")
-		action.custom_minimum_size.x = 42
-		action.disabled = sim.phase != "NIGHT" or (not Grid.placed(entity) and Grid.facilities(sim.layout,"trophy").size()>=int(sim.attributes.relic_slots))
-		action.tooltip_text = "夜晚可布置" if sim.phase != "NIGHT" else ("展示位已满，请先收起一件" if action.disabled else action.tooltip_text)
-		action.pressed.connect(_pick_pending.bind("trophy_"+str(id)))
-		row.add_child(action)
-		if Grid.placed(entity):
-			var store = _icon_button("store", "收起奖杯")
-			store.custom_minimum_size.x = 42
-			store.disabled = sim.phase != "NIGHT"
-			store.pressed.connect(_store_trophy.bind("trophy_"+str(id)))
-			row.add_child(store)
+		var definition = sim.relic_defs[id]
+		var fixture = Grid.find(sim.layout, "trophy_" + str(id))
+		entries.append({"item": definition, "id": fixture.id, "placed": Grid.placed(fixture)})
+	entries.sort_custom(func(a, b): return a.placed if a.placed != b.placed else int(a.item.rarity) > int(b.item.rarity))
+	var rows := VBoxContainer.new()
+	box.add_child(rows)
+	for entry in entries:
+		var tile = _trophy_bag_row(entry, displayed, placed_count)
+		rows.add_child(tile)
+	search.text_changed.connect(func(query):
+		var term = query.strip_edges()
+		for row in rows.get_children():
+			row.visible = term.is_empty() or str(row.get_meta("search")).contains(term)
+	)
+
+func _trophy_bag_row(entry: Dictionary, displayed: Dictionary, placed_count: int) -> Control:
+	var relic = entry.item
+	var grade = int(relic.rarity)
+	var tint = Trophies.grade_color(grade)
+	var row_wrap = Style.card()
+	row_wrap.add_theme_stylebox_override("panel", Style.box(Color("223138"), Color("465b5c").lerp(tint, .30), 8, 8))
+	var row := HBoxContainer.new()
+	row_wrap.add_child(row)
+	row.add_child(TrophyArt.thumbnail(relic, Vector2(52, 47)))
+	var info := VBoxContainer.new()
+	info.add_theme_constant_override("separation", 2)
+	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(info)
+	var state = ""
+	if entry.placed:
+		state = " · 生效中" if displayed.get(relic.effect_type, {}).get("id") == relic.id else " · 已展示"
+	var label = "%s · %s品质%s" % [relic.name, Trophies.grade_name(grade), state]
+	var description = Trophies.description(relic)
+	row_wrap.set_meta("search", label + description)
+	info.add_child(Style.text(label, 16, tint, true))
+	info.add_child(Style.text(description, 14, Style.MUTED, true))
+	var action = _icon_button("move", "移动奖杯" if entry.placed else "摆放奖杯")
+	action.custom_minimum_size.x = 42
+	action.disabled = sim.phase != "NIGHT" or (not entry.placed and placed_count >= int(sim.attributes.relic_slots))
+	action.tooltip_text = "夜晚可布置" if sim.phase != "NIGHT" else ("展示位已满，请先收起一件" if action.disabled else action.tooltip_text)
+	action.pressed.connect(_pick_pending.bind(entry.id))
+	row.add_child(action)
+	if entry.placed:
+		var store = _icon_button("store", "收起奖杯")
+		store.custom_minimum_size.x = 42
+		store.disabled = sim.phase != "NIGHT"
+		store.pressed.connect(_store_trophy.bind(entry.id))
+		row.add_child(store)
+	return row_wrap
 
 func _store_trophy(id: String) -> void:
 	if _command(sim.store_facility(id),"奖杯已收起，常驻效果停止生效。"):
@@ -1230,12 +1233,11 @@ func _store_trophy(id: String) -> void:
 func _show_decoration_shop() -> void:
 	if sim.phase != "NIGHT" or not sim.decoration_shop_unlocked(): return
 	ui.info_panel.hide()
-	ui.slot_panel.hide()
 	guide.shop_opened("decor_shop")
 	var box = _new_modal("decor_shop", "装饰商店", 908)
 	var summary = HBoxContainer.new()
 	box.add_child(summary)
-	Style.readout(summary, "coins", "%d$" % sim.gold, "持有金币")
+	Style.readout(summary, "star", "%d 闪星" % sim.stars, "持有闪星")
 	summary.add_child(Style.text("同类效果覆盖时取最高值", 14, Style.MUTED))
 	var offers = GridContainer.new()
 	offers.columns = 2
@@ -1261,10 +1263,11 @@ func _show_decoration_shop() -> void:
 		details.add_child(Style.text(definition.name, 16))
 		details.add_child(Style.text(Decor.description(definition), 13, Style.MUTED, true))
 		details.add_child(Style.text("%d×%d 格" % [definition.extent[0], definition.extent[1]], 12, Style.MUTED))
-		var buy = Style.button("%d$" % int(definition.price))
+		var buy = Style.button("%d 闪星" % int(definition.star_cost))
 		buy.name = "Buy_" + str(definition.id)
 		buy.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		buy.disabled = sim.gold < int(definition.price)
+		buy.disabled = sim.stars < int(definition.star_cost)
+		buy.tooltip_text = "还差 %d 闪星" % (int(definition.star_cost) - sim.stars) if buy.disabled else "购买 " + str(definition.name)
 		buy.pressed.connect(_buy_decoration.bind(str(definition.id)))
 		row.add_child(buy)
 	var bag = Style.button("打开建造背包")
@@ -1280,126 +1283,94 @@ func _open_decoration_inventory() -> void:
 	if not ui.build_catalog.visible: _show_build_page()
 	ui.build_catalog._select_category("decoration")
 
-func _show_purchase_page(index: int = 0) -> void:
+func _show_purchase_page() -> void:
 	if sim.phase != "NIGHT": return
 	if not sim.purchase_unlocked():
 		_notice("解锁采购小厅后可采购", true)
 		return
+	ui.info_panel.hide()
 	guide.shop_opened("slot")
-	selected_offer = clampi(index,0,2)
-	ui.slot_panel.hide()
-	var box = _new_modal("purchase","采购处 · 今晚商品",1090)
-	var balance = HBoxContainer.new()
-	box.add_child(balance)
-	Style.readout(balance, "coins", "可用 %d$" % sim.gold, "可用于采购的金币")
-	balance.add_child(Style.text("每日收摊后换货", 14, Style.MUTED))
-	box.add_child(Style.text(_rent_budget_text(), 14, Style.MUTED, true))
-	var content = HBoxContainer.new()
-	content.add_theme_constant_override("separation",18)
-	box.add_child(content)
-	var portrait = Style.card()
-	portrait.custom_minimum_size = Vector2(265,445)
-	portrait.add_theme_stylebox_override("panel",Style.box(Color("415e4b"),Color("769877"),10,14))
-	content.add_child(portrait)
-	var hero_column = VBoxContainer.new()
-	portrait.add_child(hero_column)
-	hero_column.add_child(Style.text("本店厨师",16,Style.GOLD))
-	var staging = Control.new()
-	staging.custom_minimum_size.y = 294
-	hero_column.add_child(staging)
-	var chef = Actor.new()
-	staging.add_child(chef)
-	chef.position = Vector2(122,205)
-	chef.z_index = 2 # Child sprite is z=-1; keep the portrait above the card background.
-	chef.set_visual("chef")
-	chef.set_display_zoom(5.2)
-	chef.present("idle")
-	var lines = ["今天的菜要热乎乎地出锅。","看看晚上的新货吧！","多留点金币交房租哦。","好菜也要有人及时送到桌上。"]
-	var speech = Style.card()
-	speech.add_theme_stylebox_override("panel",Style.box(Color("f1e8d2"),Color("d8b885"),9,10))
-	hero_column.add_child(speech)
-	speech.add_child(Style.text(lines[randi_range(0,lines.size()-1)],14,Color("39483b"),true))
-	var products = VBoxContainer.new()
-	products.custom_minimum_size.x = 565
-	products.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	content.add_child(products)
-	var scroll = ScrollContainer.new()
-	scroll.custom_minimum_size.y = clampf(get_viewport_rect().size.y-340,330,490)
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	products.add_child(scroll)
-	var list = VBoxContainer.new()
-	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(list)
+	var box = _new_modal("purchase", "采购处", 746)
+	_management_header(box, "今日已采购" if sim.purchase_spent() else "今日可购 1 件")
 	var mods = sim.effective_modifiers()
-	for slot in range(sim.shop.size()):
-		var offer = sim.shop[slot]
-		var card = Style.card()
-		card.add_theme_stylebox_override("panel",Style.box(Color("304b4d") if slot==selected_offer else Style.BG,Style.GOLD if slot==selected_offer else Color("516969"),9,12))
-		list.add_child(card)
-		var product_row = HBoxContainer.new()
-		card.add_child(product_row)
-		var column = VBoxContainer.new()
-		column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		column.add_theme_constant_override("separation",5)
-		product_row.add_child(column)
-		if offer.type in ["empty","empty_buff"]:
-			column.add_child(Style.text("%02d  ·  %s" % [slot+1,"本章菜谱已收集完" if slot==0 else "暂无可购买增益"],16,Style.MUTED))
-			continue
-		if offer.type == "recipe":
-			var recipe = sim.recipes[offer.id]
-			var quality = sim.preview_quality(offer.id)
-			var sample_price = sim.meal_price(str(offer.id), quality, mods)
-			column.add_child(Style.text("菜谱 · " + str(recipe.name),19,Style.INK))
-			column.add_child(Style.text(recipe.description,13,Style.MUTED,true))
-			column.add_child(Style.text("基础价值 %d$   ·   当前品质 %d%%   ·   普通客估价 %d$\n制作 %.1f 秒/锅   ·   每锅 %d 份" % [recipe.base_value,int(quality*100),sample_price,float(recipe.cook_seconds)/(1.0+float(mods.cook)),recipe.batch_yield],14,Style.GOLD,true))
-		else:
-			var buff = sim.buff_defs[offer.id]
-			var active = sim.buff_states.get(offer.id,{"stack_count":0,"remaining_days":0})
-			column.add_child(Style.text("%s · %d★" % [buff.name, int(buff.level)],19,Style.INK))
-			column.add_child(Style.text(buff.description,14,Style.MUTED,true))
-			column.add_child(Style.text("生效 %d 个营业日   ·   购买后 %d / %d 层   ·   累计剩余 %d 天" % [buff.duration_days,int(active.stack_count)+1,buff.max_stacks,int(active.remaining_days)+int(buff.duration_days)],13,Style.GOLD,true))
-		var buy = Style.button("已买入" if offer.bought else "购买  %d$" % offer.price,true)
-		buy.disabled = offer.bought or sim.gold < int(offer.price)
-		buy.tooltip_text = "本晚已购买" if offer.bought else ("还差 %d 金币" % (int(offer.price)-sim.gold) if sim.gold < int(offer.price) else "购买并确认")
-		buy.pressed.connect(_buy.bind(slot))
-		var action = VBoxContainer.new()
-		action.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		product_row.add_child(action)
-		action.add_child(buy)
-		if buy.disabled and not offer.bought:
-			action.add_child(Style.text(buy.tooltip_text, 13, Style.RED))
-	var menu = Style.button("管理已拥有菜谱")
+	for index in sim.shop.size():
+		box.add_child(_purchase_card(index, mods))
+	var actions := HBoxContainer.new()
+	actions.alignment = BoxContainer.ALIGNMENT_END
+	box.add_child(actions)
+	var menu = Style.button("查看菜谱")
 	menu.pressed.connect(_show_menu_page)
-	products.add_child(menu)
+	actions.add_child(menu)
+
+func _purchase_card(index: int, mods: Dictionary) -> Control:
+	var offer = sim.shop[index]
+	var card = ManagementCard.new()
+	card.name = "PurchaseOffer_%d" % index
+	if offer.type in ["empty", "empty_buff"]:
+		var recipe_slot = offer.type == "empty"
+		card.build("recipe" if recipe_slot else "star_outline", "菜谱已集齐" if recipe_slot else "暂无增益", Style.MUTED)
+		return card
+	if offer.type == "recipe":
+		var recipe = sim.recipes[offer.id]
+		var quality = sim.preview_quality(offer.id)
+		var price = sim.meal_price(str(offer.id), quality, mods)
+		var seconds = float(recipe.cook_seconds) / (1.0 + float(mods.cook))
+		card.build("recipe", recipe.name, Style.GOLD)
+		card.heading.add_child(Style.text("菜谱", 13, Style.GOLD))
+		var stats = Style.text("%d 金币/份 · %.1f 秒/锅 · %d 份/锅" % [price, seconds, int(recipe.batch_yield)], 14, Style.MUTED)
+		stats.tooltip_text = "基础价值 %d 金币 · 当前品质 %d%%\n%s" % [int(recipe.base_value), roundi(quality * 100.0), recipe.description]
+		stats.mouse_filter = Control.MOUSE_FILTER_PASS
+		card.body.add_child(stats)
+	else:
+		var buff = sim.buff_defs[offer.id]
+		var glyph = {"speed": "move", "cook": "stove", "patience": "clock", "quality": "star",
+			"normal_arrivals": "crowd", "eat_time_reduction": "table", "flat_gold": "coins", "reputation": "reputation"}.get(buff.effect_type, "star")
+		card.build(glyph, buff.name, Style.GREEN)
+		card.heading.add_child(Style.text("%d★" % int(buff.level), 13, Style.GOLD))
+		var summary = Style.text("%s · %d 天" % [buff.description, int(buff.duration_days)], 14, Style.MUTED, true)
+		var active = sim.buff_states.get(offer.id, {})
+		summary.tooltip_text = "当前 %d / %d 层" % [int(active.get("stack_count", 0)), int(buff.max_stacks)]
+		summary.mouse_filter = Control.MOUSE_FILTER_PASS
+		card.body.add_child(summary)
+	var status = sim.purchase_offer_status(index)
+	var buy = card.action("已采购" if offer.bought else "%d 金币" % int(offer.price), status.ok, "采购" if status.ok else str(status.error))
+	buy.name = "PurchaseOfferAction"
+	buy.pressed.connect(_buy.bind(index))
+	return card
 
 func _buy(index: int) -> void:
+	var status = sim.purchase_offer_status(index)
+	if not status.ok:
+		_notice(status.error, true)
+		return
 	var offer = sim.shop[index]
 	if offer.type == "buff":
-		if _command(sim.buy_offer(index),"增益已购买，下一场营业生效。"):
-			_show_purchase_page(index)
+		if _command(sim.buy_offer(index), "已采购，营业时生效。"):
+			_show_purchase_page()
 		return
-	if offer.type != "recipe": return
 	var recipe = sim.recipes[offer.id]
-	var box = _new_modal("buy","确认解锁 · " + recipe.name,620)
-	box.add_child(Style.text("%d 金币  ·  %d 基础价值  ·  %.0f 秒/锅  ·  每锅%d份\n旧菜会留在收藏，取消不会扣款。" % [offer.price,recipe.base_value,recipe.cook_seconds,recipe.batch_yield],15,Style.MUTED,true))
-	if sim.menu.size()>=int(sim.attributes.menu_slots):
-		guide.inline_note(box, "menu_full", "菜单已满。选一道在售菜替换，旧菜谱会留在收藏，之后可从「菜谱」换回。")
-		box.add_child(Style.text("菜单已满，选一道替换：",16,Style.GOLD))
-		for i in range(sim.menu.size()):
-			var replace = Style.button("替换 " + sim.recipes[sim.menu[i]].name,true)
-			replace.pressed.connect(_commit_purchase.bind(index,i))
+	var box = _new_modal("buy", "购买菜谱", 614)
+	var card = ManagementCard.new()
+	card.build("recipe", recipe.name, Style.GOLD)
+	Style.readout(card.side, "coins", "%d 金币" % int(offer.price), "菜谱价格")
+	box.add_child(card)
+	if sim.menu.size() >= int(sim.attributes.menu_slots):
+		guide.inline_note(box, "menu_full", "换下的菜谱会留在收藏，以后还能换回。")
+		for index_to_replace in sim.menu.size():
+			var replace = Style.button("替换 " + sim.recipes[sim.menu[index_to_replace]].name, true)
+			replace.pressed.connect(_commit_purchase.bind(index, index_to_replace))
 			box.add_child(replace)
 	else:
-		var confirm = Style.button("确认购买并上架",true)
-		confirm.pressed.connect(_commit_purchase.bind(index,-1))
+		var confirm = Style.button("购买并上架", true)
+		confirm.pressed.connect(_commit_purchase.bind(index, -1))
 		box.add_child(confirm)
-	var back = Style.button("返回采购页")
-	back.pressed.connect(_show_purchase_page.bind(index))
+	var back = Style.button("返回采购处")
+	back.pressed.connect(_show_purchase_page)
 	box.add_child(back)
 
 func _commit_purchase(index: int, slot: int) -> void:
-	if _command(sim.buy_offer(index,slot),"新菜已上架，旧菜仍可在菜单中换回。"):
-		_show_purchase_page(index)
+	if _command(sim.buy_offer(index, slot), "新菜谱已上架。"):
+		_show_purchase_page()
 
 func _show_menu_page() -> void:
 	if sim.phase != "NIGHT": return
@@ -1618,6 +1589,7 @@ func _close_modal(restore_focus := true, animate := false) -> void:
 			modal_layer.queue_free()
 		modal_layer = null
 		modal_frame = null
+		trophy_box = null
 		if world != null:
 			ui.overlay.focus_behavior_recursive = Control.FOCUS_BEHAVIOR_INHERITED
 			world.focus_behavior_recursive = Control.FOCUS_BEHAVIOR_INHERITED
@@ -1669,7 +1641,6 @@ func _dismiss_diagnostic() -> void:
 func _show_report(reveal_rewards := false) -> void:
 	_clear_diagnostic()
 	ui.info_panel.hide()
-	ui.slot_panel.hide()
 	status_timer = 0.0
 	ui.toast_card.hide()
 	report_shown_day = sim.day
@@ -1745,7 +1716,6 @@ func _restart_run(new_seed: int) -> void:
 	_close_build_page()
 	world.focus_restaurant()
 	ui.info_panel.hide()
-	ui.slot_panel.hide()
 	inspected = {}
 	_save()
 	_refresh_all()
@@ -1791,7 +1761,6 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	else:
 		world.cancel_placement()
 		_clear_inspector()
-		ui.slot_panel.hide()
 
 func _activate_shortcut(action: String) -> void:
 	match action:

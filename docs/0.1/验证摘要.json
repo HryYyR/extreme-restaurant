@@ -1,0 +1,57 @@
+{
+  "date": "2026-11-23",
+  "config_version": "0.2.2",
+  "engine": "Godot 4.6.3",
+  "rules_regression": {
+    "passed": 48,
+    "failed": 0
+  },
+  "native_ui": {
+    "passed": 14,
+    "failed": 0,
+    "viewport": [
+      1440,
+      900
+    ]
+  },
+  "natural_budget_reference_strategy": {
+    "runs": 30,
+    "wins": 30,
+    "invariant_errors": 0,
+    "days_simulated": 840,
+    "winning_final_gold_min": 631,
+    "winning_final_gold_max": 5969
+  },
+  "passive_control": [
+    {
+      "cash": 2800,
+      "day": 21,
+      "result": "LOSE",
+      "seed": 123456
+    },
+    {
+      "cash": 3400,
+      "day": 21,
+      "result": "LOSE",
+      "seed": 124453
+    },
+    {
+      "cash": 2656,
+      "day": 21,
+      "result": "LOSE",
+      "seed": 125450
+    },
+    {
+      "cash": 3016,
+      "day": 21,
+      "result": "LOSE",
+      "seed": 126447
+    }
+  ],
+  "limitations": [
+    "参考策略通过比例不是玩家最终通关率",
+    "未交付网页包与独立EXE",
+    "设计规格不是全部独立自动化覆盖",
+    "未完成最终美术与完整人工体验评审"
+  ]
+}

@@ -1,0 +1,108 @@
+[
+  {
+    "id": "normal",
+    "name": "街坊客人",
+    "rarity": "normal",
+    "pool_weight": 46,
+    "type_payment_multiplier": 1,
+    "base_reputation": 1
+  },
+  {
+    "id": "commuter",
+    "name": "通勤客",
+    "rarity": "normal",
+    "pool_weight": 16,
+    "type_payment_multiplier": 1.03,
+    "base_reputation": 1,
+    "choose_time_multiplier": 0.85,
+    "eat_time_multiplier": 0.88,
+    "food_max_multiplier": 0.92
+  },
+  {
+    "id": "student",
+    "name": "学生客",
+    "rarity": "normal",
+    "pool_weight": 15,
+    "type_payment_multiplier": 0.96,
+    "base_reputation": 1,
+    "choose_time_multiplier": 1.12,
+    "eat_time_multiplier": 0.96,
+    "food_max_multiplier": 1.1
+  },
+  {
+    "id": "shopkeeper",
+    "name": "邻店店主",
+    "rarity": "normal",
+    "pool_weight": 13,
+    "type_payment_multiplier": 1.05,
+    "base_reputation": 1,
+    "choose_time_multiplier": 0.95,
+    "eat_time_multiplier": 1.08,
+    "food_max_multiplier": 1.08
+  },
+  {
+    "id": "market_visitor",
+    "name": "逛街客",
+    "rarity": "normal",
+    "pool_weight": 10,
+    "type_payment_multiplier": 1.06,
+    "base_reputation": 1,
+    "choose_time_multiplier": 1.08,
+    "eat_time_multiplier": 1.12
+  },
+  {
+    "id": "blogger",
+    "name": "探店博主",
+    "rarity": "rare",
+    "pool_weight": 40,
+    "type_payment_multiplier": 2,
+    "base_reputation": 4
+  },
+  {
+    "id": "big_eater",
+    "name": "大胃袋",
+    "rarity": "rare",
+    "pool_weight": 20,
+    "type_payment_multiplier": 4,
+    "base_reputation": 1
+  },
+  {
+    "id": "freeloader",
+    "name": "霸王餐",
+    "rarity": "rare",
+    "pool_weight": 10,
+    "type_payment_multiplier": 0,
+    "payment_override": "ZERO",
+    "base_reputation": 0
+  },
+  {
+    "id": "elder",
+    "name": "楼下老头",
+    "rarity": "rare",
+    "pool_weight": 30,
+    "type_payment_multiplier": 1,
+    "base_reputation": 2,
+    "choose_time_multiplier": 3,
+    "eat_time_multiplier": 3
+  },
+  {
+    "id": "thug",
+    "name": "地痞",
+    "rarity": "special",
+    "pool_weight": 0,
+    "type_payment_multiplier": 1,
+    "base_reputation": 1,
+    "food_cycle_multiplier": 0.05,
+    "unlimited_food_wait": true,
+    "food_penalty_per_cycle": 3
+  },
+  {
+    "id": "food_inspector",
+    "name": "食品安全员",
+    "rarity": "special",
+    "pool_weight": 0,
+    "type_payment_multiplier": 1,
+    "base_reputation": 1,
+    "eat_time_multiplier": 6.0
+  }
+]

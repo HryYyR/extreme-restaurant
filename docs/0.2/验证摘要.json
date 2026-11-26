@@ -1,0 +1,49 @@
+{
+  "version": "0.3.0",
+  "design_version": "v0.4",
+  "date": "2026-11-24",
+  "engine": "Godot 4.6.3",
+  "regression_checks": {
+    "passed": 61,
+    "failed": 0
+  },
+  "native_ui_checks": {
+    "passed": 28,
+    "failed": 0,
+    "status": "优化前28项通过；本次GUI审批未完成，尚未复验新样式"
+  },
+  "traffic_probe": {
+    "chapter_day": 22,
+    "buff": "crowd_magnet",
+    "planned": 1040,
+    "arrival_attempts": 1040,
+    "default_queue": {
+      "admitted": 43,
+      "refused": 997,
+      "simulation_milliseconds": 343
+    },
+    "maximum_queue": {
+      "capacity": 1048,
+      "admitted": 1040,
+      "refused": 0,
+      "simulation_milliseconds_to_120_seconds": 1416
+    }
+  },
+  "limitations": [
+    "旧0.2.2存档不兼容，须玩家确认新局，原档保留备份",
+    "千人队列完整清场可能很长，需快进及后续体验调优",
+    "当前只验证功能与单日性能，不做完整平衡和多种子通关率",
+    "自查后的视觉样式与截图尚未获得原生GUI复验"
+  ],
+  "artifacts": {
+    "design": "游戏设计与开发基准.md",
+    "prototype": "scenes/main.tscn",
+    "raw_tests": ".local/test_results.json",
+    "ui_tests": ".local/0_2_ui_results.json",
+    "cleanup_preview": "docs/0.2/第二版-cleanup.png"
+  },
+  "headless_ui_logic_checks": {
+    "passed": 9,
+    "failed": 0
+  }
+}

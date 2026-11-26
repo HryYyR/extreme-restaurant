@@ -1,0 +1,116 @@
+[
+  {
+    "id": "breeze_fan",
+    "name": "竹影风扇",
+    "extent": [
+      1,
+      1
+    ],
+    "shape": "forward",
+    "reach": 4,
+    "width": 4,
+    "effect": "waiter_speed",
+    "value": 0.24,
+    "price": 210,
+    "color": "78b7aa"
+  },
+  {
+    "id": "meal_bell",
+    "name": "春铃餐灯",
+    "extent": [
+      1,
+      1
+    ],
+    "shape": "cross",
+    "reach": 1,
+    "effect": "table_eat",
+    "value": 0.18,
+    "price": 220,
+    "color": "efbd74"
+  },
+  {
+    "id": "lotus_pond",
+    "name": "映月莲池",
+    "extent": [
+      2,
+      2
+    ],
+    "shape": "ring",
+    "reach": 2,
+    "effect": "table_quality",
+    "value": 0.15,
+    "price": 520,
+    "color": "8abec3"
+  },
+  {
+    "id": "wish_screen",
+    "name": "松影花屏",
+    "extent": [
+      1,
+      2
+    ],
+    "shape": "forward",
+    "reach": 4,
+    "width": 1,
+    "effect": "table_reputation",
+    "value": 1,
+    "price": 490,
+    "color": "d0a5c7"
+  },
+  {
+    "id": "gold_lantern",
+    "name": "金桂灯盏",
+    "extent": [
+      1,
+      1
+    ],
+    "shape": "ring",
+    "reach": 1,
+    "effect": "table_gold",
+    "value": 0.12,
+    "price": 330,
+    "color": "edbc69"
+  },
+  {
+    "id": "peach_pavilion",
+    "name": "芳庭花架",
+    "extent": [
+      3,
+      3
+    ],
+    "shape": "ring",
+    "reach": 3,
+    "effect": "group_base_gold",
+    "value": 2,
+    "price": 680,
+    "color": "da9eaa"
+  },
+  {
+    "id": "herb_rack",
+    "name": "香草置架",
+    "extent": [
+      1,
+      1
+    ],
+    "shape": "ring",
+    "reach": 1,
+    "effect": "stove_speed",
+    "value": 0.22,
+    "price": 255,
+    "color": "9bb987"
+  },
+  {
+    "id": "ceramic_station",
+    "name": "琉璃调味台",
+    "extent": [
+      2,
+      3
+    ],
+    "shape": "ring",
+    "reach": 1,
+    "effect": "stove_quality",
+    "value": 0.25,
+    "price": 560,
+    "color": "9caed4"
+  }
+]

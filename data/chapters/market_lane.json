@@ -1,0 +1,51 @@
+{
+  "title": "集市快线",
+  "subtitle": "第二章 · 店门外就是集市",
+  "initial_gold": 680,
+  "initial_menu": ["batch_snacks"],
+  "base_customer_counts": {
+    "normal": 46,
+    "rare": 3
+  },
+  "common_guest_template": {
+    "payment_multiplier": 0.9,
+    "choose_seconds": 2,
+    "order_patience_seconds": 13,
+    "food_penalty_cycle_seconds": 17,
+    "food_max_wait_seconds": 65,
+    "eat_seconds": 5
+  },
+  "demand_curve": [
+    {
+      "from_day": 1,
+      "normal": 46,
+      "rare": 3
+    },
+    {
+      "from_day": 4,
+      "normal": 52,
+      "rare": 3
+    },
+    {
+      "from_day": 8,
+      "normal": 74,
+      "rare": 5
+    },
+    {
+      "from_day": 15,
+      "normal": 125,
+      "rare": 7
+    },
+    {
+      "from_day": 22,
+      "normal": 174,
+      "rare": 10
+    }
+  ],
+  "rent_schedule": [
+    { "day": 7, "amount": 3600 },
+    { "day": 14, "amount": 5900 },
+    { "day": 21, "amount": 8400 },
+    { "day": 28, "amount": 16400 }
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "description": "为角色种类设置 SpriteFrames .tres 路径；空字符串使用程序生成像素占位。动画状态由 ActorView 映射，不驱动游戏计时。",
+  "font": "",
+  "chef": {
+    "frames": "",
+    "scale": 1.55,
+    "offset": [
+      0,
+      -6
+    ],
+    "animation_map": {}
+  },
+  "waiter": {
+    "frames": "",
+    "scale": 1.55,
+    "offset": [
+      0,
+      -6
+    ],
+    "animation_map": {}
+  },
+  "normal": {
+    "frames": "",
+    "scale": 1.55,
+    "offset": [
+      0,
+      -6
+    ],
+    "animation_map": {}
+  },
+  "blogger": {
+    "frames": "",
+    "scale": 1.55,
+    "offset": [
+      0,
+      -6
+    ],
+    "animation_map": {}
+  },
+  "big_eater": {
+    "frames": "",
+    "scale": 1.55,
+    "offset": [
+      0,
+      -6
+    ],
+    "animation_map": {}
+  },
+  "freeloader": {
+    "frames": "",
+    "scale": 1.55,
+    "offset": [
+      0,
+      -6
+    ],
+    "animation_map": {}
+  },
+  "elder": {
+    "frames": "",
+    "scale": 1.55,
+    "offset": [
+      0,
+      -6
+    ],
+    "animation_map": {}
+  },
+  "thug": {
+    "frames": "",
+    "scale": 1.55,
+    "offset": [
+      0,
+      -6
+    ],
+    "animation_map": {}
+  },
+  "animations": [
+    "idle",
+    "walk",
+    "cook",
+    "order",
+    "carry",
+    "eat"
+  ]
+}

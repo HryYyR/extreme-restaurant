@@ -1,0 +1,65 @@
+[
+  {
+    "id": "bronze_clock",
+    "name": "铜摆钟",
+    "description": "常驻：服务员移动速度 +12%",
+    "effect_type": "speed",
+    "effect_value": 0.12,
+    "star_cost": 2,
+    "color": "d89b58"
+  },
+  {
+    "id": "ember_cup",
+    "name": "余烬之杯",
+    "description": "常驻：烹饪速率 +15%",
+    "effect_type": "cook",
+    "effect_value": 0.15,
+    "star_cost": 2,
+    "color": "d7755a"
+  },
+  {
+    "id": "silver_bell",
+    "name": "银铃",
+    "description": "常驻：等餐耐心 +20%",
+    "effect_type": "patience",
+    "effect_value": 0.2,
+    "star_cost": 2,
+    "color": "9fbfd3"
+  },
+  {
+    "id": "jade_medal",
+    "name": "翠玉勋章",
+    "description": "常驻：菜品品质 +25%",
+    "effect_type": "quality",
+    "effect_value": 1,
+    "star_cost": 3,
+    "color": "7cc6a0"
+  },
+  {
+    "id": "golden_spoon",
+    "name": "鎏金汤匙",
+    "description": "常驻：每位正常结账客人额外 +2 金币",
+    "effect_type": "flat_gold",
+    "effect_value": 2,
+    "star_cost": 3,
+    "color": "e8c369"
+  },
+  {
+    "id": "laurel_crown",
+    "name": "月桂冠",
+    "description": "常驻：完成用餐额外 +1 声望",
+    "effect_type": "reputation",
+    "effect_value": 1,
+    "star_cost": 3,
+    "color": "bd9fdb"
+  },
+  {
+    "id": "dining_hourglass",
+    "name": "流沙漏",
+    "description": "常驻：客人用餐时间缩短 15%",
+    "effect_type": "eat_time_reduction",
+    "effect_value": 0.15,
+    "star_cost": 4,
+    "color": "edd196"
+  }
+]

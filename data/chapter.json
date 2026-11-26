@@ -1,0 +1,927 @@
+{
+  "id": "street_corner",
+  "config_version": "0.8.0",
+  "title": "街角食堂",
+  "subtitle": "第一章 · 从一碗家常饭开始",
+  "chapter_days": 28,
+  "day_duration_seconds": 120,
+  "simulation_tick_ms": 50,
+  "arrival_cutoff_ratio": 1,
+  "initial_gold": 600,
+  "initial_reputation": 0,
+  "initial_menu": [
+    "starter_rice"
+  ],
+  "initial_attributes": {
+    "waiters": 4,
+    "chefs": 2,
+    "menu_slots": 1,
+    "tables": 8,
+    "queue_capacity": 96,
+    "relic_slots": 1
+  },
+  "attribute_caps": {
+    "waiters": 18,
+    "chefs": 12,
+    "menu_slots": 3,
+    "tables": 36,
+    "queue_capacity": 1048,
+    "relic_slots": 6
+  },
+  "base_customer_counts": {
+    "normal": 35,
+    "rare": 2
+  },
+  "guest_groups": [
+    { "size": 2, "from_day": 2, "share": 0.12 },
+    { "size": 4, "from_day": 5, "share": 0.08 }
+  ],
+  "common_guest_template": {
+    "payment_multiplier": 1,
+    "expected_quality": 1,
+    "choose_seconds": 3,
+    "order_patience_seconds": 15,
+    "food_penalty_cycle_seconds": 20,
+    "food_max_wait_seconds": 80,
+    "eat_seconds": 8
+  },
+  "quality_rules": {
+    "minimum": 0.5,
+    "maximum": 2,
+    "step": 0.25,
+    "disappointment_penalty_per_step": 2,
+    "price_bonus_scale": 0.4
+  },
+  "rent_schedule": [
+    {
+      "day": 7,
+      "amount": 3100
+    },
+    {
+      "day": 14,
+      "amount": 6000
+    },
+    {
+      "day": 21,
+      "amount": 9900
+    },
+    {
+      "day": 28,
+      "amount": 17800
+    }
+  ],
+  "upgrade_rules": {
+    "waiters": {
+      "first_cost": 32,
+      "increment": 18,
+      "first_gold": 180,
+      "gold_increment": 120,
+      "base_count": 4
+    },
+    "chefs": {
+      "first_cost": 52,
+      "increment": 28,
+      "first_gold": 320,
+      "gold_increment": 170,
+      "base_count": 2
+    },
+    "menu_slots": {
+      "first_cost": 52,
+      "increment": 42,
+      "first_gold": 220,
+      "gold_increment": 160,
+      "base_count": 1
+    },
+    "tables": {
+      "first_cost": 18,
+      "increment": 9,
+      "first_gold": 110,
+      "gold_increment": 75,
+      "base_count": 8
+    },
+    "queue_capacity": {
+      "first_cost": 48,
+      "increment": 20,
+      "first_gold": 140,
+      "gold_increment": 80,
+      "base_count": 96,
+      "step": 128
+    },
+    "relic_slots": {
+      "first_cost": 65,
+      "increment": 38,
+      "first_gold": 210,
+      "gold_increment": 100,
+      "base_count": 1
+    }
+  },
+  "movement": {
+    "waiter_speed": 3.5,
+    "chef_speed": 2.5,
+    "guest_speed": 2,
+    "interaction_seconds": 0.5,
+    "chef_carry_capacity": 4,
+    "stove_capacity": 8,
+    "pass_capacity": 16
+  },
+  "weather": {
+    "default": "clear",
+    "calendar": [],
+    "presets": {
+      "clear": {"name": "晴朗", "rain": 0, "wind": 0, "cloud": 0},
+      "rain": {"name": "下雨", "rain": 0.64, "wind": 0.28, "cloud": 0.48},
+      "thunderstorm": {
+        "name": "雷雨",
+        "rain": 0.96,
+        "wind": 0.68,
+        "cloud": 0.81,
+        "thunder": {"first_delay_seconds": [3, 4.5], "interval_seconds": [10, 17]}
+      }
+    }
+  },
+  "calendar": [
+    {
+      "day": 6,
+      "event": "lunch_rush"
+    },
+    {
+      "day": 6,
+      "duration_days": 3,
+      "event": "food_festival"
+    },
+    {
+      "day": 7,
+      "event": "weekend"
+    },
+    {
+      "day": 11,
+      "duration_days": 2,
+      "event": "thug_visit"
+    },
+    {
+      "day": 13,
+      "event": "group_booking"
+    },
+    {
+      "day": 14,
+      "event": "weekend"
+    },
+    {
+      "day": 15,
+      "event": "food_inspection"
+    },
+    {
+      "day": 16,
+      "duration_days": 6,
+      "event": "bad_weather"
+    },
+    {
+      "day": 20,
+      "event": "lunch_rush"
+    },
+    {
+      "day": 20,
+      "event": "holiday"
+    },
+    {
+      "day": 21,
+      "event": "weekend"
+    },
+    {
+      "day": 24,
+      "duration_days": 2,
+      "event": "food_review"
+    },
+    {
+      "day": 27,
+      "event": "lunch_rush"
+    },
+    {
+      "day": 28,
+      "event": "weekend"
+    }
+  ],
+  "events": {
+    "lunch_rush": {
+      "name": "午市高峰",
+      "description": "一部分常规客人集中在午间到店",
+      "arrival_peak": {
+        "start_minute": 720,
+        "end_minute": 840,
+        "share": 0.45
+      }
+    },
+    "weekend": {
+      "name": "周末小高峰",
+      "description": "普通客人 +20%",
+      "normal_pct": 0.2
+    },
+    "food_festival": {
+      "name": "街角美食节",
+      "description": "街坊把长桌和灯笼都搬了出来。连办三天，约着一起来吃饭的人会格外多。",
+      "traffic": {"normal": 0.15, "rare": 0.30, "2": 0.30, "4": 0.30},
+      "notice": {
+        "art": "res://assets/events/food_festival.png",
+        "grant": {"reputation": 200},
+        "goal": {"daily_stars": 3, "reward": {"reputation": 200}}
+      }
+    },
+    "thug_visit": {
+      "name": "地痞出没",
+      "description": "连日下雨，沿街店铺清静了许多。街坊晚报提醒，最近有地痞在这一带出没。",
+      "regular_traffic_multiplier": 0.7,
+      "weather": "rain",
+      "special_guest": "thug",
+      "special_visits": [
+        {"day_offset": 0, "size": 1, "spawn_seconds": 48},
+        {"day_offset": 1, "size": 2, "spawn_seconds": 86}
+      ],
+      "notice": {"art": "res://assets/events/thug_visit.png"}
+    },
+    "food_inspection": {
+      "name": "食品安全检查",
+      "description": "四位食品安全员到店抽查。他们会仔细试吃每份餐点，检查出品并给出评价。",
+      "special_guest": "food_inspector",
+      "special_visits": [{"day_offset": 0, "size": 4, "spawn_seconds": 52}],
+      "quality_inspection": {"neutral_quality": 1.25, "reputation_per_percentage_point": 2, "limit": 100},
+      "notice": {}
+    },
+    "group_booking": {
+      "name": "团餐预约",
+      "description": "街坊协会把聚餐订在餐馆。散客仍会来，四人桌和晚市出餐会最忙。",
+      "traffic": {"2": 0.5, "4": 1.5},
+      "arrival_peak": {"start_minute": 1020, "end_minute": 1140, "share": 0.55},
+      "notice": {"art": "res://assets/events/group_booking.png", "grant": {"reputation": 100}}
+    },
+    "bad_weather": {
+      "name": "恶劣天气",
+      "description": "街坊晚报发出连日雷雨预警。沿街客流会一直偏少，直到缴租日。",
+      "weather": "thunderstorm",
+      "traffic": {"normal": -0.60, "rare": -0.60, "2": -0.60, "4": -0.60},
+      "notice": {"art": "res://assets/events/bad_weather.png"}
+    },
+    "food_review": {
+      "name": "街区品鉴",
+      "description": "街区评审要连续两天巡店。吃客会用更挑剔的标准品尝，出品跟得上的店能赚更多。",
+      "quality_expectation_add": 0.25,
+      "payment_pct": 0.1,
+      "notice": {"art": "res://assets/events/food_review.png", "grant": {"gold": 300}}
+    },
+    "holiday": {
+      "name": "法定节日",
+      "description": "普通客人 +50%",
+      "normal_pct": 0.5
+    }
+  },
+  "initial_layout": {
+    "width": 32,
+    "height": 22,
+    "entrance": [
+      0,
+      12
+    ],
+    "exit": [
+      0,
+      13
+    ],
+    "waiter_spawn": [
+      3,
+      9
+    ],
+    "chef_spawn": [
+      5,
+      4
+    ],
+    "waiter_starts": [
+      [
+        3,
+        9
+      ],
+      [
+        6,
+        9
+      ],
+      [
+        9,
+        9
+      ],
+      [
+        11,
+        9
+      ],
+      [
+        8,
+        11
+      ]
+    ],
+    "chef_starts": [
+      [
+        3,
+        4
+      ],
+      [
+        5,
+        4
+      ],
+      [
+        7,
+        4
+      ]
+    ],
+    "kitchen_bounds": {
+      "left": 1,
+      "top": 1,
+      "right": 12,
+      "bottom": 5
+    },
+    "wall_cells": [
+      [
+        1,
+        6
+      ],
+      [
+        2,
+        6
+      ],
+      [
+        3,
+        6
+      ],
+      [
+        4,
+        6
+      ],
+      [
+        6,
+        6
+      ],
+      [
+        7,
+        6
+      ],
+      [
+        8,
+        6
+      ],
+      [
+        9,
+        6
+      ],
+      [
+        11,
+        6
+      ]
+    ],
+    "facilities": [
+      {
+        "id": "order",
+        "type": "order",
+        "name": "订单口",
+        "pos": [
+          8,
+          3
+        ]
+      },
+      {
+        "id": "pass",
+        "type": "pass",
+        "name": "出餐口",
+        "pos": [
+          10,
+          3
+        ]
+      },
+      {
+        "id": "stove_1",
+        "type": "stove",
+        "name": "灶台 1",
+        "pos": [
+          2,
+          2
+        ]
+      },
+      {
+        "id": "stove_2",
+        "type": "stove",
+        "name": "灶台 2",
+        "pos": [
+          4,
+          2
+        ]
+      },
+      {
+        "id": "table_1",
+        "type": "table",
+        "name": "餐桌 1",
+        "pos": [
+          4,
+          8
+        ]
+      },
+      {
+        "id": "table_2",
+        "type": "table",
+        "name": "餐桌 2",
+        "pos": [
+          7,
+          8
+        ]
+      },
+      {
+        "id": "table_3",
+        "type": "table",
+        "name": "餐桌 3",
+        "pos": [
+          10,
+          8
+        ]
+      },
+      {
+        "id": "table_4",
+        "type": "table",
+        "name": "餐桌 4",
+        "pos": [
+          4,
+          10
+        ]
+      },
+      {
+        "id": "table_5",
+        "type": "table",
+        "name": "餐桌 5",
+        "pos": [
+          7,
+          10
+        ]
+      },
+      {
+        "id": "table_6",
+        "type": "table",
+        "name": "餐桌 6",
+        "pos": [
+          10,
+          10
+        ]
+      },
+      {
+        "id": "table_7",
+        "type": "table",
+        "name": "餐桌 7",
+        "pos": [
+          7,
+          12
+        ]
+      },
+      {
+        "id": "table_8",
+        "type": "table",
+        "name": "餐桌 8",
+        "pos": [
+          10,
+          12
+        ]
+      },
+      {
+        "id": "cashier",
+        "type": "cashier",
+        "name": "收银台",
+        "pos": [
+          2,
+          10
+        ]
+      }
+    ]
+  },
+  "ui_thresholds": {
+    "loss_ratio": 0.15,
+    "high_utilization": 0.8,
+    "queue_wait_hint_seconds": 30
+  },
+  "save_version": 7,
+  "buff_shop_weights": [
+    { "from_day": 1, "weights": { "1": 75, "2": 22, "3": 3 } },
+    { "from_day": 8, "weights": { "1": 55, "2": 35, "3": 10 } },
+    { "from_day": 15, "weights": { "1": 30, "2": 45, "3": 25 } },
+    { "from_day": 22, "weights": { "1": 15, "2": 45, "3": 40 } }
+  ],
+  "trophy_shop_weights": [
+    { "from_day": 1, "weights": { "2": 90, "3": 9, "4": 1 } },
+    { "from_day": 8, "weights": { "2": 70, "3": 26, "4": 4 } },
+    { "from_day": 15, "weights": { "2": 50, "3": 40, "4": 10 } },
+    { "from_day": 22, "weights": { "2": 25, "3": 48, "4": 27 } }
+  ],
+  "completion_star_targets": [
+    { "from_day": 1, "percent": 75 },
+    { "from_day": 8, "percent": 80 },
+    { "from_day": 15, "percent": 85 },
+    { "from_day": 22, "percent": 90 }
+  ],
+  "demand_curve": [
+    {
+      "from_day": 1,
+      "normal": 35,
+      "rare": 2
+    },
+    {
+      "from_day": 4,
+      "normal": 41,
+      "rare": 3
+    },
+    {
+      "from_day": 8,
+      "normal": 60,
+      "rare": 4
+    },
+    {
+      "from_day": 15,
+      "normal": 102,
+      "rare": 6
+    },
+    {
+      "from_day": 22,
+      "normal": 146,
+      "rare": 8
+    }
+  ],
+  "guaranteed_traffic_offer_days": [
+    22,
+    27
+  ],
+  "fast_forward_multiplier": 8,
+  "trophy_zone": {
+    "left": 26,
+    "top": 9,
+    "right": 30,
+    "bottom": 12
+  },
+  "upgrade_unlocks": {
+    "waiters": {
+      "unlock_day": 1,
+      "purchase_caps": [
+        {
+          "day": 1,
+          "max_purchases": 2
+        },
+        {
+          "day": 4,
+          "max_purchases": 4
+        },
+        {
+          "day": 8,
+          "max_purchases": 7
+        },
+        {
+          "day": 15,
+          "max_purchases": 0
+        }
+      ]
+    },
+    "chefs": {
+      "unlock_day": 2,
+      "purchase_caps": [
+        {
+          "day": 2,
+          "max_purchases": 1
+        },
+        {
+          "day": 5,
+          "max_purchases": 3
+        },
+        {
+          "day": 10,
+          "max_purchases": 5
+        },
+        {
+          "day": 17,
+          "max_purchases": 0
+        }
+      ]
+    },
+    "tables": {
+      "unlock_day": 1,
+      "purchase_caps": [
+        {
+          "day": 1,
+          "max_purchases": 3
+        },
+        {
+          "day": 3,
+          "max_purchases": 5
+        },
+        {
+          "day": 6,
+          "max_purchases": 8
+        },
+        {
+          "day": 10,
+          "max_purchases": 12
+        },
+        {
+          "day": 17,
+          "max_purchases": 0
+        }
+      ]
+    },
+    "menu_slots": {
+      "unlock_day": 4,
+      "purchase_caps": [
+        {
+          "day": 4,
+          "max_purchases": 1
+        },
+        {
+          "day": 8,
+          "max_purchases": 2
+        },
+        {
+          "day": 15,
+          "max_purchases": 0
+        }
+      ]
+    },
+    "queue_capacity": {
+      "unlock_day": 8,
+      "purchase_caps": [
+        {
+          "day": 8,
+          "max_purchases": 5
+        },
+        {
+          "day": 15,
+          "max_purchases": 0
+        }
+      ]
+    },
+    "relic_slots": {
+      "unlock_day": 5,
+      "purchase_caps": [
+        {
+          "day": 5,
+          "max_purchases": 1
+        },
+        {
+          "day": 7,
+          "max_purchases": 2
+        },
+        {
+          "day": 14,
+          "max_purchases": 4
+        },
+        {
+          "day": 21,
+          "max_purchases": 0
+        }
+      ]
+    }
+  },
+  "land_plots": [
+    {
+      "id": "purchase_annex",
+      "name": "采购小厅",
+      "kind": "purchase",
+      "bounds": {
+        "left": 13,
+        "top": 7,
+        "right": 20,
+        "bottom": 14
+      },
+      "unlock_day": 3,
+      "star_cost": 1,
+      "grant_chefs": 0,
+      "fixtures": [
+        {
+          "id": "slot",
+          "type": "slot",
+          "name": "采购处",
+          "pos": [
+            15,
+            8
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trophy_gallery",
+      "name": "奖杯展廊",
+      "kind": "trophy",
+      "bounds": {
+        "left": 21,
+        "top": 7,
+        "right": 30,
+        "bottom": 14
+      },
+      "unlock_day": 5,
+      "star_cost": 2,
+      "grant_chefs": 0,
+      "fixtures": [
+        {
+          "id": "trophy_shop",
+          "type": "trophy_shop",
+          "name": "奖杯商店",
+          "pos": [
+            23,
+            8
+          ]
+        },
+        {
+          "id": "trophy_bronze_clock",
+          "type": "trophy",
+          "name": "铜摆钟",
+          "pos": [
+            26,
+            10
+          ],
+          "relic_id": "bronze_clock"
+        }
+      ]
+    },
+    {
+      "id": "decor_studio",
+      "name": "装饰工坊",
+      "kind": "decor",
+      "bounds": {
+        "left": 21,
+        "top": 1,
+        "right": 30,
+        "bottom": 6
+      },
+      "unlock_day": 7,
+      "star_cost": 2,
+      "grant_chefs": 0,
+      "fixtures": [
+        {
+          "id": "decor_shop",
+          "type": "decor_shop",
+          "name": "装饰商店",
+          "pos": [
+            25,
+            3
+          ]
+        }
+      ]
+    },
+    {
+      "id": "kitchen_extension",
+      "name": "扩建厨房",
+      "kind": "kitchen",
+      "bounds": {
+        "left": 13,
+        "top": 1,
+        "right": 20,
+        "bottom": 6
+      },
+      "unlock_day": 10,
+      "star_cost": 3,
+      "grant_chefs": 1,
+      "fixtures": [
+        {
+          "id": "gift_stove_k",
+          "type": "stove",
+          "name": "扩建灶台",
+          "pos": [
+            15,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "id": "south_dining",
+      "name": "南侧客席",
+      "kind": "tables",
+      "bounds": {
+        "left": 1,
+        "top": 15,
+        "right": 10,
+        "bottom": 20
+      },
+      "unlock_day": 13,
+      "star_cost": 3,
+      "grant_chefs": 0,
+      "fixtures": [
+        {
+          "id": "gift_table_s1",
+          "type": "table",
+          "name": "南侧餐桌 1",
+          "pos": [
+            3,
+            16
+          ]
+        },
+        {
+          "id": "gift_table_s2",
+          "type": "table",
+          "name": "南侧餐桌 2",
+          "pos": [
+            6,
+            16
+          ]
+        },
+        {
+          "id": "gift_table_s3",
+          "type": "table",
+          "name": "南侧餐桌 3",
+          "pos": [
+            3,
+            18
+          ]
+        }
+      ]
+    },
+    {
+      "id": "garden_dining",
+      "name": "庭院客席",
+      "kind": "tables",
+      "bounds": {
+        "left": 11,
+        "top": 15,
+        "right": 20,
+        "bottom": 20
+      },
+      "unlock_day": 17,
+      "star_cost": 4,
+      "grant_chefs": 0,
+      "fixtures": [
+        {
+          "id": "gift_table_g1",
+          "type": "table",
+          "name": "庭院餐桌 1",
+          "pos": [
+            13,
+            16
+          ]
+        },
+        {
+          "id": "gift_table_g2",
+          "type": "table",
+          "name": "庭院餐桌 2",
+          "pos": [
+            17,
+            16
+          ]
+        },
+        {
+          "id": "gift_table_g3",
+          "type": "table",
+          "name": "庭院餐桌 3",
+          "pos": [
+            13,
+            18
+          ]
+        }
+      ]
+    },
+    {
+      "id": "east_dining",
+      "name": "东侧客席",
+      "kind": "tables",
+      "bounds": {
+        "left": 21,
+        "top": 15,
+        "right": 30,
+        "bottom": 20
+      },
+      "unlock_day": 22,
+      "star_cost": 4,
+      "grant_chefs": 0,
+      "fixtures": [
+        {
+          "id": "gift_table_e1",
+          "type": "table",
+          "name": "东侧餐桌 1",
+          "pos": [
+            23,
+            16
+          ]
+        },
+        {
+          "id": "gift_table_e2",
+          "type": "table",
+          "name": "东侧餐桌 2",
+          "pos": [
+            27,
+            16
+          ]
+        },
+        {
+          "id": "gift_table_e3",
+          "type": "table",
+          "name": "东侧餐桌 3",
+          "pos": [
+            23,
+            18
+          ]
+        },
+        {
+          "id": "gift_table_e4",
+          "type": "table",
+          "name": "东侧餐桌 4",
+          "pos": [
+            27,
+            18
+          ]
+        }
+      ]
+    }
+  ]
+}
